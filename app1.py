@@ -59,7 +59,7 @@ col_temp, col_wind, col_wave, col_days = st.columns(4)
 initial_temperature = col_temp.number_input('Температура (C)', min_value=0.0, max_value=50.0, value=25.0, key='initial_temperature')
 wind_speed = col_wind.number_input('Скорость ветра (м/с)', min_value=0.0, max_value=50.0, value=5.0, key='wind_speed')
 wave_length = col_wave.number_input('Высота волны (м)', min_value=0.0, max_value=20.0, value=1.0, key='wave_length')
-days = col_days.number_input('Количество дней', min_value=1, max_value=30, value=10, key='days')
+days = col_days.number_input('Количество дней', min_value=1, max_value=30, value=30, key='days')
 
 
 # Map the selected oil field to its corresponding encoded value
