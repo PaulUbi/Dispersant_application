@@ -1,15 +1,19 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import xgboost as xgb
 import matplotlib.pyplot as plt
 import seaborn as sns
+import joblib
 from playsound import playsound
 
 # Load the saved XGBoost model for initial efficiency prediction
 model_file_path = "xgboost_model.model"
-XGBoost_final = xgb.Booster()
-XGBoost_final.load_model(model_file_path)
+if os.path.exists(model_file_path):
+    with open(model_file_path, 'rb') as f:
+        XGBoost_final = joblib.load(f)
+else:
+    st.error("Model file not found. Please ensure 'xgboost_model.model' is in the same directory.")
+
 
 # Define custom CSS for Google Font
 custom_css = """
