@@ -4,12 +4,15 @@ import pandas as pd
 import xgboost as xgb
 import matplotlib.pyplot as plt
 import seaborn as sns
-from playsound import playsound
+import os
 
 # Load the saved XGBoost model for initial efficiency prediction
 model_file_path = "xgboost_model.model"
-XGBoost_final = xgb.Booster()
-XGBoost_final.load_model(model_file_path)
+if os.path.exists(model_file_path):
+    XGBoost_final = xgb.Booster()
+    XGBoost_final.load_model(model_file_path)
+else:
+    st.error("Model file not found. Please ensure 'xgboost_model.model' is in the same directory.")
 
 # Define custom CSS for Google Font
 custom_css = """
@@ -61,7 +64,6 @@ wind_speed = col_wind.number_input('Скорость ветра (м/с)', min_va
 wave_length = col_wave.number_input('Высота волны (м)', min_value=0.0, max_value=20.0, value=1.0, key='wave_length')
 days = col_days.number_input('Количество дней', min_value=1, max_value=30, value=30, key='days')
 
-
 # Map the selected oil field to its corresponding encoded value
 oil_field_encoded = {"Хохряковское": 4, "Усинское": 3, "Правдинское": 2, "Нагорн.(Турней)": 1, "Нагорн.(Башкир)": 0}
 encoded_oil_field = oil_field_encoded[oil_field]
@@ -90,39 +92,41 @@ if st.sidebar.button('Прогноз'):
     input_data = np.array([[temperature, salinity, viscosity, density, encoded_oil_field, encoded_dispersant_ratio]])
     
     # Make initial prediction
-    prediction = XGBoost_final.predict(xgb.DMatrix(input_data))
-    base_efficiency = prediction[0]
-    
-    # Display initial prediction
-    st.subheader('Результат прогноза')
-    if base_efficiency < 50:
-        st.markdown('<style>@keyframes blink { 50% { opacity: 0; } } .blinking { animation: blink 1s infinite; color: red; }</style>', unsafe_allow_html=True)
-        st.markdown(f'<p class="blinking">Прогнозируемая эффективность диспергента: {base_efficiency:.2f}% - Предупреждение: Использование диспергента может оказаться нецелесообразным</p>', unsafe_allow_html=True)
-        playsound("beep.mp3")
+    if os.path.exists(model_file_path):
+        prediction = XGBoost_final.predict(xgb.DMatrix(input_data))
+        base_efficiency = prediction[0]
+        
+        # Display initial prediction
+        st.subheader('Результат прогноза')
+        if base_efficiency < 50:
+            st.markdown('<style>@keyframes blink { 50% { opacity: 0; } } .blinking { animation: blink 1s infinite; color: red; }</style>', unsafe_allow_html=True)
+            st.markdown(f'<p class="blinking">Прогнозируемая эффективность диспергента: {base_efficiency:.2f}% - Предупреждение: Использование диспергента может оказаться нецелесообразным</p>', unsafe_allow_html=True)
+        else:
+            st.success(f'Прогнозируемая эффективность диспергента: {base_efficiency:.2f}% - Использование диспергента возможно')
+            
+            # Simulate efficiency over time
+            efficiencies = simulate_efficiency(days, initial_temperature, wind_speed, wave_length, base_efficiency)
+            
+            # Find the optimum number of reserve days
+            reserve_days = next((i + 1 for i, efficiency in enumerate(efficiencies) if efficiency < 50), days + 1)
+            
+            st.info(f'У вас есть в запасе не более {reserve_days - 1} дней, прежде чем диспергент будет не эффективен.')
+            
+            # Plot the efficiency over time
+            st.subheader('График эффективности диспергента с течением времени')
+            days_range = np.arange(1, days + 1)
+            
+            fig, ax = plt.subplots(figsize=(12, 6))
+            sns.set(style='darkgrid')
+            sns.lineplot(x=days_range, y=efficiencies, marker='o', ax=ax, label='Efficiency')
+            ax.axhline(y=50, color='gray', linestyle='--', label='50% Efficiency Threshold')
+            ax.axvline(x=reserve_days - 1, color='red', linestyle='--', label='Optimum Reserve Days')
+            ax.text(reserve_days - 1, 50, 'Резервные дни', color='red', ha='center', va='bottom')
+            ax.set_title('Эффективность диспергента с течением времени', fontsize=16, fontweight='bold')
+            ax.set_xlabel('Количество дней', fontsize=14)
+            ax.set_ylabel('Эффективности (%)', fontsize=14)
+            ax.set_ylim(0, base_efficiency + 10)  # Set y-axis limit to a bit higher than base efficiency for better visualization
+            ax.legend(loc='upper right')
+            st.pyplot(fig)
     else:
-        st.success(f'Прогнозируемая эффективность диспергента: {base_efficiency:.2f}% - Использование диспергента возможно')
-        
-        # Simulate efficiency over time
-        efficiencies = simulate_efficiency(days, initial_temperature, wind_speed, wave_length, base_efficiency)
-        
-        # Find the optimum number of reserve days
-        reserve_days = next((i + 1 for i, efficiency in enumerate(efficiencies) if efficiency < 50), days + 1)
-        
-        st.info(f'У вас есть в запасе не более {reserve_days - 1} дней, прежде чем диспергент будет не эффективен.')
-        
-        # Plot the efficiency over time
-        st.subheader('График эффективности диспергента с течением времени')
-        days_range = np.arange(1, days + 1)
-        
-        fig, ax = plt.subplots(figsize=(12, 6))
-        sns.set(style='darkgrid')
-        sns.lineplot(x=days_range, y=efficiencies, marker='o', ax=ax, label='Efficiency')
-        ax.axhline(y=50, color='gray', linestyle='--', label='50% Efficiency Threshold')
-        ax.axvline(x=reserve_days - 1, color='red', linestyle='--', label='Optimum Reserve Days')
-        ax.text(reserve_days - 1, 50, 'Резервные дни', color='red', ha='center', va='bottom')
-        ax.set_title('Эффективность диспергента с течением времени', fontsize=16, fontweight='bold')
-        ax.set_xlabel('Количество дней', fontsize=14)
-        ax.set_ylabel('Эффективности (%)', fontsize=14)
-        ax.set_ylim(0, base_efficiency + 10)  # Set y-axis limit to a bit higher than base efficiency for better visualization
-        ax.legend(loc='upper right')
-        st.pyplot(fig)
+        st.error("Model file not found. Please ensure 'xgboost_model.model' is in the same directory.")
