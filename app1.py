@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pickle
 from playsound import playsound
-import os
 
 # Load the saved XGBoost model for initial efficiency prediction
 model_file_path = "xgboost_model.pkl"
