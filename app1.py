@@ -1,21 +1,15 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
+import xgboost as xgb
 import matplotlib.pyplot as plt
 import seaborn as sns
-import pickle
 from playsound import playsound
 
 # Load the saved XGBoost model for initial efficiency prediction
-model_file_path = "xgboost_model.pkl"
-
-try:
-    with open(model_file_path, 'rb') as f:
-        XGBoost_final = pickle.load(f)
-except Exception as e:
-    st.error(f"Failed to load XGBoost model: {e}")
-    st.stop()
-
+model_file_path = "xgboost_model.model"
+XGBoost_final = xgb.Booster()
+XGBoost_final.load_model(model_file_path)
 
 # Define custom CSS for Google Font
 custom_css = """
