@@ -3,17 +3,19 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import joblib
+import pickle
 from playsound import playsound
 import os
 
 # Load the saved XGBoost model for initial efficiency prediction
-model_file_path = "xgboost_model.model"
-if os.path.exists(model_file_path):
+model_file_path = "xgboost_model.pkl"
+
+try:
     with open(model_file_path, 'rb') as f:
-        XGBoost_final = joblib.load(f)
-else:
-    st.error("Model file not found. Please ensure 'xgboost_model.model' is in the same directory.")
+        XGBoost_final = pickle.load(f)
+except Exception as e:
+    st.error(f"Failed to load XGBoost model: {e}")
+    st.stop()
 
 
 # Define custom CSS for Google Font
